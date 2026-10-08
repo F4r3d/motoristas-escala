@@ -94,8 +94,8 @@ function preencherInputsDiaZero() {
 
   // Filtra as viagens gravadas no banco que pertencem ao Dia Zero (hoje)
   const viagensHoje = appState.viagensHistorico.filter(v =>
-  extrairDataISO(v.data) === appState.datas.hoje
-);
+    extrairDataISO(v.data) === appState.datas.hoje
+  );
   
   // Limpa os inputs do Dia Zero antes de preencher
   document.querySelectorAll("input[data-mot]").forEach(input => input.value = "");
@@ -118,15 +118,14 @@ function preencherInputsDiaZero() {
 
       const numViagem = contadorPorMotorista[numMotorista];
 
-      // Busca o input exato da tabela correspondente a este motorista e viagem
-      const inputTarget = document.querySelector(`input[data-mot="${numMotorista}"][data-v="${numViagem}"]`);
-      if (inputTarget) {
-        inputTarget.value = v.passageiro;
-      }
+      // Busca TODOS os inputs (Desktop e Mobile) correspondentes a este motorista e viagem
+      const targets = document.querySelectorAll(`input[data-mot="${numMotorista}"][data-v="${numViagem}"]`);
+      targets.forEach(input => {
+        input.value = v.passageiro;
+      });
     }
   });
 }
-
 
 
 
@@ -217,10 +216,10 @@ function preencherHistoricoEspecifico(viagensDoDia, idHeadDesktop, idBodyDesktop
     const listaPassageiros = porMotorista[motChave] || [];
     htmlMobile += `
       <div class="bg-white p-4 rounded-lg border border-slate-200 shadow-sm space-y-2">
-        <h4 class="font-bold text-slate-700 text-sm border-b pb-1 border-slate-100 text-center">${mot}</h4>
+        <h4 class="bg-blue-100 font-bold text-blue-900 text-sm border-b pb-1 border-slate-100 text-left pl-2">${mot}</h4>
         <ul class="text-xs space-y-1 text-slate-600">
           ${listaPassageiros.length > 0 
-            ? listaPassageiros.map(p => `<li class="bg-slate-50 p-1.5 rounded border border-slate-100 text-center">${p}</li>`).join('')
+            ? listaPassageiros.map(p => `<li class="bg-slate-50 p-1.5 rounded border border-slate-100 text-left">${p}</li>`).join('')
             : '<li class="text-slate-400 italic text-center">Sem viagens registradas</li>'}
         </ul>
       </div>
@@ -288,22 +287,24 @@ function indexarHistoricoRecente() {
   });
 }
 
-// Fica de olho no que está sendo digitado na tabela
+// Fica de olho no que está sendo digitado (Tabela ou Cards)
 document.addEventListener("input", (e) => {
   const el = e.target;
   if (el.tagName !== "INPUT" || el.type !== "text") return;
 
-  const td = el.closest("td");
-  if (!td) return;
+  // Em vez de procurar <td>, pegamos o número do motorista pelo data-mot do próprio input
+  const numMot = el.getAttribute("data-mot");
+  if (!numMot) return;
 
-  const colIndex = td.cellIndex;
-  const motorista = appState.motoristas[colIndex];
+  // Pega o nome do motorista na lista usando o índice (lembrando que numMot começa em 1, então subtrai 1)
+  const motorista = appState.motoristas[parseInt(numMot) - 1];
   if (!motorista) return;
 
   const valor = el.value.trim().toLowerCase();
   
   if (!valor) {
     el.className = "w-full p-2 border border-slate-300 rounded focus:ring-2 focus:ring-blue-500 bg-white text-slate-800";
+    el.removeAttribute("title");
     return;
   }
 
