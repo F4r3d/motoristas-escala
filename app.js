@@ -42,6 +42,8 @@
 
       preencherInputsDiaZero();
 
+      atualizarContadorCorridas();
+
     } catch (error) {
       console.error("Erro ao carregar dados do Sheets:", error);
       alert("Não foi possível carregar os dados do Google Sheets. Verifique a conexão.");
@@ -216,7 +218,7 @@ function preencherHistoricoEspecifico(viagensDoDia, idHeadDesktop, idBodyDesktop
     const listaPassageiros = porMotorista[motChave] || [];
     htmlMobile += `
       <div class="bg-white p-4 rounded-lg border border-slate-200 shadow-sm space-y-2">
-        <h4 class="bg-blue-100 font-bold text-blue-900 text-sm border-b pb-1 border-slate-100 text-left pl-2">${mot}</h4>
+        <h4 class="bg-blue-100 font-bold text-blue-900 text-sm rounded border-b pb-1 border-slate-100 text-left pl-2 py-1">${mot}</h4>
         <ul class="text-xs space-y-1 text-slate-600">
           ${listaPassageiros.length > 0 
             ? listaPassageiros.map(p => `<li class="bg-slate-50 p-1.5 rounded border border-slate-100 text-left">${p}</li>`).join('')
@@ -334,28 +336,35 @@ async function salvarEscalaDiaZero() {
   }
 
   const viagensParaSalvar = [];
-
-  // Pega todos os inputs que possuem o atributo data-mot (visão Desktop)
+  const assinaturasVistas = new Set(); // Evita enviar o mesmo registro 2x devido ao Dual-DOM
   const dataHoje = appState.datas.hoje;
-  const inputsDesktop = document.querySelectorAll("input[data-mot]");
 
-  inputsDesktop.forEach(input => {
+  // Pega todos os inputs que possuem o atributo data-mot
+  const inputs = document.querySelectorAll("input[data-mot]");
+
+  inputs.forEach(input => {
     const passageiro = input.value.trim();
     if (passageiro !== "") {
       const indiceMotorista = parseInt(input.dataset.mot, 10) - 1;
       const motorista = appState.motoristas[indiceMotorista];
 
       if (motorista) {
-        viagensParaSalvar.push({
-          data: dataHoje,
-          motorista: motorista,
-          passageiro: passageiro
-        });
+        // Cria uma chave única por motorista + passageiro
+        const chaveUnica = `${motorista.toLowerCase()}___${passageiro.toLowerCase()}`;
+
+        if (!assinaturasVistas.has(chaveUnica)) {
+          assinaturasVistas.add(chaveUnica);
+          viagensParaSalvar.push({
+            data: dataHoje,
+            motorista: motorista,
+            passageiro: passageiro
+          });
+        }
       }
     }
   });
 
-  console.log("Enviando viagens encontradas:", viagensParaSalvar);
+  console.log("Enviando viagens encontradas (filtradas):", viagensParaSalvar);
 
   if (viagensParaSalvar.length === 0) {
     alert("Nenhum passageiro preenchido para salvar!");
@@ -382,6 +391,7 @@ async function salvarEscalaDiaZero() {
     if (resultado.status === "success") {
       alert(`Escala salva com sucesso! (${resultado.count} registro(s))`);
       await carregarDadosDoSheets();
+      atualizarContadorCorridas();
     } else {
       alert("Erro ao salvar: " + (resultado.mensagem || "Tente novamente."));
     }
@@ -394,6 +404,28 @@ async function salvarEscalaDiaZero() {
       btnSalvar.innerText = "Salvar Escala";
     }
   }
+}
+
+// CONTADOR
+function atualizarContadorCorridas() {
+  const elContador = document.getElementById("total-corridas-hoje");
+  if (!elContador) return;
+
+  const inputs = document.querySelectorAll("input[data-mot]");
+  const corridasUnicas = new Set();
+
+  inputs.forEach(input => {
+    const passageiro = input.value.trim();
+    if (passageiro !== "") {
+      const motIndex = input.dataset.mot;
+      // Cria uma chave única por combinação motorista + passageiro
+      const chaveCorregida = `${motIndex}_${passageiro.toLowerCase()}`;
+      corridasUnicas.add(chaveCorregida);
+    }
+  });
+
+  const total = corridasUnicas.size;
+  elContador.innerText = total === 1 ? "1 corrida" : `${total} corridas`;
 }
 
 document.getElementById("btnSalvarEscala").addEventListener("click", salvarEscalaDiaZero);
