@@ -370,7 +370,7 @@ async function salvarEscalaDiaZero() {
     alert("Nenhum passageiro preenchido para salvar!");
     if (btnSalvar) {
       btnSalvar.disabled = false;
-      btnSalvar.innerText = "Salvar Escala";
+      btnSalvar.innerText = "Salvar no Google Sheets";
     }
     return;
   }
@@ -401,7 +401,7 @@ async function salvarEscalaDiaZero() {
   } finally {
     if (btnSalvar) {
       btnSalvar.disabled = false;
-      btnSalvar.innerText = "Salvar Escala";
+      btnSalvar.innerText = "Salvar no Google Sheets";
     }
   }
 }
